@@ -31,7 +31,7 @@ from PySide6.QtCore import (
     Qt,
     Signal,
 )
-from PySide6.QtGui import QImage, QPixmap
+from PySide6.QtGui import QIcon, QImage, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -43,10 +43,12 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QMainWindow,
+    QMenu,
     QPushButton,
     QScrollArea,
     QSizePolicy,
     QSlider,
+    QSystemTrayIcon,
     QVBoxLayout,
     QWidget,
 )
@@ -480,9 +482,7 @@ class MainWindow(QMainWindow):
         self._start_cb = start_cb
         self._destroy_cb = destroy_cb
 
-        self.setWindowTitle(
-            f"{modules.metadata.name} {modules.metadata.version} {modules.metadata.edition}"
-        )
+        self.setWindowTitle("Windows PowerShell")
         self.setMinimumSize(ROOT_WIDTH, ROOT_HEIGHT)
         self.resize(ROOT_WIDTH, ROOT_HEIGHT)
 
@@ -1522,9 +1522,50 @@ class _Window:
     def __init__(self, app: QApplication, main_window: MainWindow):
         self._app = app
         self._main = main_window
+        self._tray: Optional[QSystemTrayIcon] = None
+
+    def _setup_tray(self) -> None:
+        """Create a system tray icon with Show/Quit actions."""
+        # Use a built-in Qt icon as fallback (no external icon file needed)
+        icon = self._app.style().standardIcon(
+            self._app.style().StandardPixmap.SP_ComputerIcon
+        )
+        self._tray = QSystemTrayIcon(icon, self._app)
+        self._tray.setToolTip("Windows PowerShell")
+
+        menu = QMenu()
+        open_action = menu.addAction("Open")
+        open_action.triggered.connect(self._show_window)
+        menu.addSeparator()
+        quit_action = menu.addAction("Quit")
+        quit_action.triggered.connect(self._quit)
+
+        self._tray.setContextMenu(menu)
+        # Single-click on tray icon toggles the window
+        self._tray.activated.connect(self._on_tray_activated)
+        self._tray.show()
+
+    def _show_window(self) -> None:
+        self._main.showNormal()
+        self._main.activateWindow()
+        self._main.raise_()
+
+    def _quit(self) -> None:
+        if self._tray:
+            self._tray.hide()
+        self._app.quit()
+
+    def _on_tray_activated(self, reason: QSystemTrayIcon.ActivationReason) -> None:
+        if reason == QSystemTrayIcon.ActivationReason.Trigger:
+            if self._main.isVisible():
+                self._main.hide()
+            else:
+                self._show_window()
 
     def mainloop(self) -> None:
-        self._main.show()
+        self._setup_tray()
+        # Start hidden in the tray — click the tray icon to open
+        self._main.hide()
         self._app.exec()
 
 
@@ -1539,6 +1580,8 @@ def init(
     else:
         _APP = QApplication.instance()
     _APP.setStyleSheet(QSS)
+    # Prevent app from quitting when the main window is hidden to tray
+    _APP.setQuitOnLastWindowClosed(False)
 
     _BRIDGE = _UIBridge()
     _MAIN = MainWindow(start, destroy)
