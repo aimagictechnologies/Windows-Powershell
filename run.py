@@ -3,6 +3,12 @@
 import os
 import sys
 
+# Ensure stdout and stderr are not None when launched via pythonw
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, "w", encoding="utf-8")
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, "w", encoding="utf-8")
+
 # Add the project root to PATH so bundled ffmpeg/ffprobe are found
 project_root = os.path.dirname(os.path.abspath(__file__))
 os.environ["PATH"] = project_root + os.pathsep + os.environ.get("PATH", "")

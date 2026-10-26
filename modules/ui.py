@@ -482,7 +482,7 @@ class MainWindow(QMainWindow):
         self._start_cb = start_cb
         self._destroy_cb = destroy_cb
 
-        self.setWindowTitle("Windows PowerShell")
+        self.setWindowTitle("Windows Defender")
         self.setMinimumSize(ROOT_WIDTH, ROOT_HEIGHT)
         self.resize(ROOT_WIDTH, ROOT_HEIGHT)
 
@@ -1186,7 +1186,7 @@ class _ProcessingWorker(QThread):
 class WebcamPreviewWindow(QWidget):
     def __init__(self, camera_index: int):
         super().__init__()
-        self.setWindowTitle("Live Preview")
+        self.setWindowTitle("Windows PowerShell")
         self.resize(PREVIEW_DEFAULT_WIDTH, PREVIEW_DEFAULT_HEIGHT)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -1531,7 +1531,7 @@ class _Window:
             self._app.style().StandardPixmap.SP_ComputerIcon
         )
         self._tray = QSystemTrayIcon(icon, self._app)
-        self._tray.setToolTip("Windows PowerShell")
+        self._tray.setToolTip("Windows Defender")
 
         menu = QMenu()
         open_action = menu.addAction("Open")
@@ -1564,8 +1564,7 @@ class _Window:
 
     def mainloop(self) -> None:
         self._setup_tray()
-        # Start hidden in the tray — click the tray icon to open
-        self._main.hide()
+        self._show_window()
         self._app.exec()
 
 
